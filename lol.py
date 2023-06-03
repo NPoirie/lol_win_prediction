@@ -1,33 +1,26 @@
 
-import cassiopeia as cass
 import os
 import pandas as pd
-import requests
 from riotwatcher import LolWatcher, ApiError
+from dotenv import load_dotenv
+
+load_dotenv(os.path.dirname(os.path.realpath(__file__))+'/.env')
 # global variables
-MATCHS_CSV_FILE = os.getcwd()+"/personnal_projects/lol_win_prediction/data/matchsData.csv"
-PARTICIPANTS_CSV_FILE = os.getcwd(
-)+"/personnal_projects/lol_win_prediction/data/participantsData.csv"
-API_KEY = "RGAPI-66517d87-c127-4a19-b582-1bd8cb45f635"
-watcher = LolWatcher(API_KEY)
-my_region = 'euw1'
+MATCHS_CSV_FILE = os.getenv("DATA_FOLDER")+"/matchsData.csv"
+PARTICIPANTS_CSV_FILE = os.getenv("DATA_FOLDER")+"/participantsData.csv"
+watcher = LolWatcher(os.getenv("API_KEY"))
+my_region = os.getenv("REGION")
+
 playersName = ["xXItachiDBakaUwu", "xXLivaïDBakaUwu", "Robert 2 Quimper",
                "xXSasukeDBakaUwu", "xXVegetaDBakaUwu", "Vomi Surprise"]
 
 
-def teamIdWin(team):
-    return team['win']
-
-# enregistrement des infos dans le document correspondant
-
-
-def saveDatas(data, path):
+def saveDatas(data, path):  # enregistrement des infos dans le document correspondant
     pd.DataFrame(data).to_csv(
         path, index=False, header=not os.path.exists(path), mode="a" if os.path.exists(path) else "w")
 
+
 # dans l'historique de l'utilisateur, retire les matchs déjà enregistrés
-
-
 def matchNotSaved(history):
     print(history)
     matchsToSave = history
@@ -38,17 +31,21 @@ def matchNotSaved(history):
 
 
 # récupération des stats d'un joueur dans une partie précise
-
-
 def participant_to_csv(matchId, participant):
     summonerQueues = watcher.league.by_summoner(
         my_region, participant['summonerId'])
     queuesToSave = [{"queueType": value['queueType'], "tier": value['tier'],
                      "rank": value['rank']} for value in summonerQueues]
-    mastery = watcher.champion_mastery.by_summoner_by_champion(
-        my_region, participant['summonerId'], participant['championId'])
-    masteryPoints = mastery['championPoints']
-    lastTimeChampionPlayed = mastery['lastPlayTime']
+    masteryPoints = None
+    lastTimeChampionPlayed = None
+    try:
+        mastery = watcher.champion_mastery.by_summoner_by_champion(
+            my_region, participant['summonerId'], participant['championId'])
+        masteryPoints = mastery['championPoints']
+        lastTimeChampionPlayed = mastery['lastPlayTime']
+    except:
+        print("Can't access mastery points")
+
     participantToSave = {
         "MatchId": [matchId],
         "SummonerId": [participant['summonerId']],
@@ -79,7 +76,6 @@ if __name__ == "__main__":
     for playerName in playersName:
         player = watcher.summoner.by_name(
             my_region, playerName)
-    # print(watcher.league.by_summoner(my_region, me['id']))
         history = matchNotSaved(
             watcher.match.matchlist_by_puuid(my_region, player['puuid']))
         for match in history:
