@@ -3,16 +3,16 @@ import os
 import pandas as pd
 from riotwatcher import LolWatcher, ApiError
 from dotenv import load_dotenv
-
+import json
 load_dotenv(os.path.dirname(os.path.realpath(__file__))+'/.env')
 # global variables
 MATCHS_CSV_FILE = os.getenv("DATA_FOLDER")+"/matchsData.csv"
 PARTICIPANTS_CSV_FILE = os.getenv("DATA_FOLDER")+"/participantsData.csv"
 watcher = LolWatcher(os.getenv("API_KEY"))
 my_region = os.getenv("REGION")
-
-playersName = ["xXItachiDBakaUwu", "xXLivaïDBakaUwu", "Robert 2 Quimper",
-               "xXSasukeDBakaUwu", "xXVegetaDBakaUwu", "Vomi Surprise"]
+players = open(os.path.dirname(os.path.realpath(__file__)) +
+               '/players.json', encoding='utf-8')
+playersName = json.load(players)['playersName']
 
 
 def saveDatas(data, path):  # enregistrement des infos dans le document correspondant
