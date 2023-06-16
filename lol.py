@@ -8,6 +8,7 @@ load_dotenv(os.path.dirname(os.path.realpath(__file__))+'/.env')
 # global variables
 MATCHS_CSV_FILE = os.getenv("DATA_FOLDER")+"/matchsData.csv"
 PARTICIPANTS_CSV_FILE = os.getenv("DATA_FOLDER")+"/participantsData.csv"
+SUMMONERS_CSV_FILE = os.getenv("DATA_FOLDER")+"/summonersData.csv"
 watcher = LolWatcher(os.getenv("API_KEY"))
 my_region = os.getenv("REGION")
 players = open(os.path.dirname(os.path.realpath(__file__)) +
@@ -30,12 +31,64 @@ def matchNotSaved(history):
     return matchsToSave
 
 
-# récupération des stats d'un joueur dans une partie précise
+def formatQueues(queues):
+    formattedQueues = {
+        'RANKED_SOLO_5x5': {
+            'tier': None,
+            'rank': None,
+            "wins": None,
+            "losses": None,
+            "leaguePoints": None
+        },
+        'RANKED_FLEX_SR': {
+            'tier': None,
+            'rank': None,
+            "wins": None,
+            "losses": None,
+            "leaguePoints": None}}
+    for queue in queues:
+        formattedQueues[queue['queueType']] = {
+            "tier": queue['tier'],
+            "rank": queue['rank'],
+            "wins": queue['wins'],
+            "losses": queue['losses'],
+            "leaguePoints": queue['leaguePoints']}
+    return formattedQueues
+
+
+def summoner_to_csv(matchId, participant):
+    summonerQueues = watcher.league.by_summoner(
+        my_region, participant['summonerId'])
+    queuesToSave = [{"queueType": value['queueType'],
+                     "tier": value['tier'],
+                     "rank": value['rank'],
+                     "wins": value['wins'],
+                     "losses": value['losses'],
+                     "leaguePoints": value['leaguePoints']} for value in summonerQueues]
+    formatedQueues = formatQueues(queuesToSave)
+    summonerToSave = {
+        "MatchId": [matchId],
+        "SummonerId": [participant['summonerId']],
+        "SummonerName": [participant['summonerName']],
+        "SummonerLevel": [participant["summonerLevel"]],
+        "SoloTier": [formatedQueues['RANKED_SOLO_5x5']['tier']],
+        "SoloRank": [formatedQueues['RANKED_SOLO_5x5']['rank']],
+        "SoloWins": [formatedQueues['RANKED_SOLO_5x5']['wins']],
+        "SoloLosses": [formatedQueues['RANKED_SOLO_5x5']['losses']],
+        "SoloLP": [formatedQueues['RANKED_SOLO_5x5']['leaguePoints']],
+        "FlexTier": [formatedQueues['RANKED_FLEX_SR']['tier']],
+        "FlexRank": [formatedQueues['RANKED_FLEX_SR']['rank']],
+        "FlexWins": [formatedQueues['RANKED_FLEX_SR']['wins']],
+        "FlexLosses": [formatedQueues['RANKED_FLEX_SR']['losses']],
+        "FlexLP": [formatedQueues['RANKED_FLEX_SR']['leaguePoints']],
+    }
+    saveDatas(summonerToSave, SUMMONERS_CSV_FILE)
+
+
 def participant_to_csv(matchId, participant):
     summonerQueues = watcher.league.by_summoner(
         my_region, participant['summonerId'])
-    queuesToSave = [{"queueType": value['queueType'], "tier": value['tier'],
-                     "rank": value['rank']} for value in summonerQueues]
+    summoner_to_csv(matchId, participant)
     masteryPoints = None
     lastTimeChampionPlayed = None
     try:
@@ -49,8 +102,6 @@ def participant_to_csv(matchId, participant):
     participantToSave = {
         "MatchId": [matchId],
         "SummonerId": [participant['summonerId']],
-        "SummonerLevel": [participant["summonerLevel"]],
-        "QueuesRanks": [queuesToSave],
         "ChampionName": [participant['championName']],
         "Mastery": [masteryPoints],
         "LastTimeChampionPlayed": [lastTimeChampionPlayed],

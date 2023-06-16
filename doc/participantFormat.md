@@ -4,7 +4,6 @@
 |-------|--------|-------------|
 |MatchId| String | Id de la partie
 |SummonerId| String | Id du compte du participant
-|SummonerLevel| Int | Niveau du compte
 |QueuesRank| Rank[] | Classement sur les différents fils classés
 |ChampionName| String | Nom du champion joué
 |Mastery| Int | Nombre de points de maitrise sur le champion joué
